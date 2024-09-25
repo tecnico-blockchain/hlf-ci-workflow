@@ -43,13 +43,13 @@ deploy-chaincode:
 
     # compute next chaincode seqnum
     - |
+      CHAINCODE_NAME="${CI_PROJECT_NAME}"
       SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}' || echo 0)"
-      export SEQUENCE=$(( SEQUENCE + 1 ))
+      SEQUENCE=$(( SEQUENCE + 1 ))
 
     # package chaincode
     - |
-      export CHAINCODE_NAME="${CI_PROJECT_NAME}"
-      export CHAINCODE_LABEL="${CI_PROJECT_NAME}"
+      CHAINCODE_LABEL="${CI_PROJECT_NAME}"
       cat << METADATA-EOF > "metadata.json"
       {
           "type": "ccaas",
@@ -69,6 +69,13 @@ deploy-chaincode:
       tar cfz chaincode.tgz metadata.json code.tar.gz
       export PACKAGE_ID=$(kubectl hlf chaincode calculatepackageid --path=chaincode.tgz --language=node --label=$CHAINCODE_LABEL)
 
+    # install chaincode on all peers
+    - |
+      for i in 0 1; do
+        kubectl hlf chaincode install --path=./chaincode.tgz \
+          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.default
+      done
+
     # start/update chaincode container
     - |
       kubectl hlf externalchaincode sync --image=${CI_REGISTRY_IMAGE}:rev-${CI_COMMIT_SHORT_SHA} \
@@ -78,16 +85,10 @@ deploy-chaincode:
         --tls-required=false \
         --replicas=1
 
-    # install chaincode on all peers
-    - |
-      for i in 0 1; do
-        kubectl hlf chaincode install --path=./chaincode.tgz \
-          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.default
-      done
 
     # approve chaincode
     - |
-      export VERSION="rev-${CI_COMMIT_SHORT_SHA}"
+      VERSION="rev-${CI_COMMIT_SHORT_SHA}"
 
       kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.default \
         --package-id=$PACKAGE_ID \
