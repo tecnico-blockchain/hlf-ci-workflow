@@ -139,6 +139,9 @@ setup-hlf:
       kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete --namespace $NAMESPACE secrets wallet
       
+      # never fail on this step
+      true
+
     # create org1
     - |
       kubectl hlf ca create --namespace $NAMESPACE --storage-class=standard --capacity=1Gi --istio-port=443 \
