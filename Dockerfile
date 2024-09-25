@@ -7,8 +7,8 @@ RUN npm install
 
 COPY index.js .
 
-ENV CHAINCODE_ID
-ENV CHAINCODE_SERVER_ADDRESS
+ENV CHAINCODE_ID name:somehash
+ENV CHAINCODE_SERVER_ADDRESS 0.0.0.0:7052
 
 CMD ["npm", "run", "server", "--chaincode-address", "$CHAINCODE_SERVER_ADDRESS", "--chaincode-id", "$CHAINCODE_ID"]
 
