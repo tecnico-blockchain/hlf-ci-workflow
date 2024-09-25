@@ -129,12 +129,14 @@ setup-hlf:
 
     # ensure no half-baked installations are present
     - |
+      kubectl delete fabricoperatorapis.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricorderernodes.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricpeers.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabriccas.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricchaincode.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricmainchannels --namespace $NAMESPACE --all
       kubectl delete fabricfollowerchannels --namespace $NAMESPACE --all
+      kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       
     # create org1
     - |
