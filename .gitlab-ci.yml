@@ -78,7 +78,7 @@ deploy-chaincode:
 
     # start/update chaincode container
     - |
-      kubectl hlf externalchaincode sync --image=${CI_PROJECT_NAME}:rev-${CI_COMMIT_SHORT_SHA} \
+      kubectl hlf externalchaincode sync --image=${CI_REGISTRY_IMAGE}:rev-${CI_COMMIT_SHORT_SHA} \
         --name=$CHAINCODE_NAME \
         --namespace=$NAMESPACE \
         --package-id=$PACKAGE_ID \
