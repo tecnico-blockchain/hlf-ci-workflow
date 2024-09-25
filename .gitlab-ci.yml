@@ -137,10 +137,7 @@ setup-hlf:
       kubectl delete fabricmainchannels --namespace $NAMESPACE --all
       kubectl delete fabricfollowerchannels --namespace $NAMESPACE --all
       kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete --namespace $NAMESPACE secrets wallet
-      
-      # never fail on this step
-      true
+      kubectl delete --namespace $NAMESPACE secrets wallet || true
 
     # create org1
     - |
