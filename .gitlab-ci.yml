@@ -44,8 +44,10 @@ deploy-chaincode:
     # compute next chaincode seqnum
     - |
       CHAINCODE_NAME="${CI_PROJECT_NAME}"
-      SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}' || echo 0)"
+      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0.default --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
+      SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
+      rm seq.txt
 
     # package chaincode
     - |
