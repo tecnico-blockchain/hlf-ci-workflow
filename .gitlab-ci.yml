@@ -111,16 +111,17 @@ setup-hlf:
         ./"${KREW}" install krew
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-
-      kubectl config view
-      kubectl cluster-info
+      echo $HOME
+      echo $PATH
+      ls -la $HOME
+      ls -la /root
       
     # TODO: declarative (and non-hardcoded) topology config tool
     # bail if everything is set up already
     - |
       NAMESPACE=default
 
-      if kubectl get --namespace $NAMESPACE fabricoperatorapis.hlf.kungfusoftware.es operator-api; then
+      if kubectl get --namespace $NAMESPACE fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
         # Already setup, just wait for the last critical step to finish
         kubectl wait --namespace $NAMESPACE --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
         exit 0
