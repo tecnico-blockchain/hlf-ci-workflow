@@ -43,7 +43,7 @@ deploy-chaincode:
 
     # compute next chaincode seqnum
     - |
-      SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}')"
+      SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}' || echo 0)"
       export SEQUENCE=$(( SEQUENCE + 1 ))
 
     # package chaincode
