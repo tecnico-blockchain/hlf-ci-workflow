@@ -29,6 +29,8 @@ deploy-chaincode:
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
       
+      kubectl krew install hlf
+
       # TODO: streamline with tool
       NAMESPACE=default
 
@@ -111,11 +113,9 @@ setup-hlf:
         ./"${KREW}" install krew
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-      echo $HOME
-      echo $PATH
-      ls -la $HOME
-      ls -la /root
       
+      kubectl krew install hlf
+
     # TODO: declarative (and non-hardcoded) topology config tool
     # bail if everything is set up already
     - |
