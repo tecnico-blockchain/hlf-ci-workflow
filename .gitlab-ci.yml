@@ -69,13 +69,6 @@ deploy-chaincode:
       tar cfz chaincode.tgz metadata.json code.tar.gz
       export PACKAGE_ID=$(kubectl hlf chaincode calculatepackageid --path=chaincode.tgz --language=node --label=$CHAINCODE_LABEL)
 
-    # install chaincode on all peers
-    - |
-      for i in 0 1; do
-        kubectl hlf chaincode install --path=./chaincode.tgz \
-          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.default
-      done
-
     # start/update chaincode container
     - |
       kubectl hlf externalchaincode sync --image=${CI_REGISTRY_IMAGE}:rev-${CI_COMMIT_SHORT_SHA} \
@@ -84,6 +77,13 @@ deploy-chaincode:
         --package-id=$PACKAGE_ID \
         --tls-required=false \
         --replicas=1
+
+    # install chaincode on all peers
+    - |
+      for i in 0 1; do
+        kubectl hlf chaincode install --path=./chaincode.tgz \
+          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.default
+      done
 
     # approve chaincode
     - |
