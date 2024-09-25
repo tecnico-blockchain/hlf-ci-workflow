@@ -111,6 +111,9 @@ setup-hlf:
         ./"${KREW}" install krew
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+      kubectl config view
+      kubectl cluster-info
       
     # TODO: declarative (and non-hardcoded) topology config tool
     # bail if everything is set up already
