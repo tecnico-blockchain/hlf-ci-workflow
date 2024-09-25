@@ -41,6 +41,11 @@ deploy-chaincode:
         --ca-name ca  --output peer-org1.yaml
       kubectl hlf utils adduser --userPath=peer-org1.yaml --config=org1.yaml --username=admin --mspid=Org1MSP
 
+    # compute next chaincode seqnum
+    - |
+      SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}')"
+      export SEQUENCE=$(( SEQUENCE + 1 ))
+
     # package chaincode
     - |
       export CHAINCODE_NAME="${CI_PROJECT_NAME}"
@@ -82,8 +87,6 @@ deploy-chaincode:
 
     # approve chaincode
     - |
-      SEQUENCE="$(kubectl get --namespace $NAMESPACE fabricchaincodes.hlf.kungfusoftware.es "$CHAINCODE_NAME" -o=jsonpath='{.metadata.generation}')"
-      export SEQUENCE=$(( SEQUENCE + 1 ))
       export VERSION="rev-${CI_COMMIT_SHORT_SHA}"
 
       kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.default \
