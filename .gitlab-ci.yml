@@ -134,11 +134,17 @@ setup-hlf:
         exit 0
       fi
 
-      if kubectl get namespace "${NAMESPACE}" >/dev/null; then
-        # clear existing resources
-        kubectl delete all --all -n "${NAMESPACE}"
-      fi
-      kubectl create namespace "${NAMESPACE}"
+    # ensure no half-baked installations are present
+    - |
+      kubectl delete fabricoperatorapis.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabricorderernodes.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabricpeers.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabriccas.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabricchaincode.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabricmainchannels --namespace $NAMESPACE --all
+      kubectl delete fabricfollowerchannels --namespace $NAMESPACE --all
+      kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete --namespace $NAMESPACE secrets wallet || true
 
     # create org1
     - |
