@@ -32,19 +32,19 @@ deploy-chaincode:
       kubectl krew install hlf
 
       # TODO: streamline with tool
-      NAMESPACE=default
+      NAMESPACE=hlf
 
     # fetch secrets from k8s
     - | 
-      kubectl hlf inspect --namespace $NAMESPACE --output org1.yaml -o Org1MSP -o OrdererMSP
-      kubectl hlf ca enroll --namespace $NAMESPACE --name=org1-ca --user=admin --secret=adminpw --mspid Org1MSP \
+      kubectl hlf inspect --namespace "$NAMESPACE" --output org1.yaml -o Org1MSP -o OrdererMSP
+      kubectl hlf ca enroll --namespace "$NAMESPACE" --name=org1-ca --user=admin --secret=adminpw --mspid Org1MSP \
         --ca-name ca  --output peer-org1.yaml
       kubectl hlf utils adduser --userPath=peer-org1.yaml --config=org1.yaml --username=admin --mspid=Org1MSP
 
     # compute next chaincode seqnum
     - |
       CHAINCODE_NAME="${CI_PROJECT_NAME}"
-      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0.default --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
+      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
       SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
       rm seq.txt
@@ -75,7 +75,7 @@ deploy-chaincode:
     - |
       for i in 0 1; do
         kubectl hlf chaincode install --path=./chaincode.tgz \
-          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.default
+          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.${NAMESPACE}
       done
 
     # start/update chaincode container
@@ -92,7 +92,7 @@ deploy-chaincode:
     - |
       VERSION="rev-${CI_COMMIT_SHORT_SHA}"
 
-      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.default \
+      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} \
         --package-id=$PACKAGE_ID \
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel=chan
@@ -120,122 +120,117 @@ setup-hlf:
         ./"${KREW}" install krew
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-      
+
       kubectl krew install hlf
 
     # TODO: declarative (and non-hardcoded) topology config tool
-    # bail if everything is set up already
     - |
-      NAMESPACE=default
+      NAMESPACE=hlf
 
-      if kubectl get --namespace $NAMESPACE fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
+      # bail if everything is set up already
+      if kubectl get --namespace "$NAMESPACE" fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
         # Already setup, just wait for the last critical step to finish
-        kubectl wait --namespace $NAMESPACE --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
+        kubectl wait --namespace "$NAMESPACE" --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
         exit 0
       fi
 
-    # ensure no half-baked installations are present
-    - |
-      kubectl delete fabricoperatorapis.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabricorderernodes.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabricpeers.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabriccas.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabricchaincode.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabricmainchannels --namespace $NAMESPACE --all
-      kubectl delete fabricfollowerchannels --namespace $NAMESPACE --all
-      kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete --namespace $NAMESPACE secrets wallet || true
+      if kubectl get namespace "${NAMESPACE}" >/dev/null; then
+        # clear existing resources
+        kubectl delete all --all -n "${NAMESPACE}"
+      fi
+      kubectl create namespace "${NAMESPACE}"
 
     # create org1
     - |
-      kubectl hlf ca create --namespace $NAMESPACE --storage-class=standard --capacity=1Gi --istio-port=443 \
-        --name=org1-ca --enroll-id=enroll --enroll-pw=enrollpw --hosts=org1-ca.localho.st
+      kubectl hlf ca create --namespace "$NAMESPACE" --storage-class=standard --capacity=1Gi --istio-port=443 \
+        --name=org1-ca --enroll-id=enroll --enroll-pw=enrollpw --hosts=org1-ca.${NAMESPACE}.localho.st
       
-      kubectl wait --namespace $NAMESPACE --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
       
     # register peer user in org1 (same for both for simplicity)
     - |
-      kubectl hlf ca register --namespace $NAMESPACE --name=org1-ca --user=peer --secret=peerpw --type=peer \
+      kubectl hlf ca register --namespace "$NAMESPACE" --name=org1-ca --user=peer --secret=peerpw --type=peer \
         --enroll-id enroll --enroll-secret=enrollpw --mspid Org1MSP
       
     # create org1 peers
     - |
       for i in 0 1; do
-        kubectl hlf peer create --namespace $NAMESPACE --statedb=leveldb --storage-class=standard --enroll-id=peer --mspid=Org1MSP \
-          --enroll-pw=peerpw --capacity=5Gi --name=org1-peer$i --ca-name=org1-ca.default \
-          --hosts=peer$i-org1.localho.st --istio-port=443
+        kubectl hlf peer create --namespace "$NAMESPACE" --statedb=leveldb --storage-class=standard --enroll-id=peer --mspid=Org1MSP \
+          --enroll-pw=peerpw --capacity=5Gi --name=org1-peer$i --ca-name=org1-ca.$NAMESPACE \
+          --hosts=peer$i-org1.${NAMESPACE}.localho.st --istio-port=443
       done
       
-      kubectl wait --namespace $NAMESPACE --timeout=180s --for=condition=Running fabricpeers.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricpeers.hlf.kungfusoftware.es --all
 
     # create orderer org
     - |
-      kubectl hlf ca create --namespace $NAMESPACE --storage-class=standard --capacity=1Gi --name=ord-ca \
-        --enroll-id=enroll --enroll-pw=enrollpw --hosts=ord-ca.localho.st --istio-port=443
+      kubectl hlf ca create --namespace "$NAMESPACE" --storage-class=standard --capacity=1Gi --name=ord-ca \
+        --enroll-id=enroll --enroll-pw=enrollpw --hosts=ord-ca.${NAMESPACE}.localho.st --istio-port=443
       
-      kubectl wait --namespace $NAMESPACE --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
 
     # create orderer user (shared for simplicity)
     - |
-      kubectl hlf ca register --namespace $NAMESPACE --name=ord-ca --user=orderer --secret=ordererpw \
-        --type=orderer --enroll-id enroll --enroll-secret=enrollpw --mspid=OrdererMSP --ca-url="https://ord-ca.localho.st:443"
+      kubectl hlf ca register --namespace "$NAMESPACE" --name=ord-ca --user=orderer --secret=ordererpw \
+        --type=orderer --enroll-id enroll --enroll-secret=enrollpw --mspid=OrdererMSP --ca-url="https://ord-ca.${NAMESPACE}.localho.st:443"
 
     # create orderers
     - |
       for i in 0 1 2; do
-        kubectl hlf ordnode create --namespace $NAMESPACE \
+        kubectl hlf ordnode create --namespace "$NAMESPACE" \
           --storage-class=standard --enroll-id=orderer --mspid=OrdererMSP \
-          --enroll-pw=ordererpw --capacity=2Gi --name=ord-node$i --ca-name=ord-ca.default \
-          --hosts=orderer$i-ord.localho.st --admin-hosts=admin-orderer$i-ord.localho.st --istio-port=443
+          --enroll-pw=ordererpw --capacity=2Gi --name=ord-node$i --ca-name=ord-ca.$NAMESPACE \
+          --hosts=orderer$i-ord.${NAMESPACE}.localho.st --admin-hosts=admin-orderer$i-ord.${NAMESPACE}.localho.st --istio-port=443
       done
       
-      kubectl wait --namespace $NAMESPACE --timeout=180s --for=condition=Running fabricorderernodes.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricorderernodes.hlf.kungfusoftware.es --all
       
     # create orderer msp id in its own CA
     - |
-      kubectl hlf ca register --name=ord-ca --user=admin --secret=adminpw --namespace $NAMESPACE \
+      kubectl hlf ca register --name=ord-ca --user=admin --secret=adminpw --namespace "$NAMESPACE" \
         --type=admin --enroll-id enroll --enroll-secret=enrollpw --mspid=OrdererMSP
-      kubectl hlf ca enroll --name=ord-ca --namespace $NAMESPACE \
+      kubectl hlf ca enroll --name=ord-ca --namespace "$NAMESPACE" \
         --user=admin --secret=adminpw --mspid OrdererMSP \
         --ca-name tlsca  --output orderermsp.yaml
       
     # create org1 msp orderer id
     - |
-      kubectl hlf ca register --name=org1-ca --user=admin --secret=adminpw --namespace $NAMESPACE \
+      kubectl hlf ca register --name=org1-ca --user=admin --secret=adminpw --namespace "$NAMESPACE" \
         --type=admin --enroll-id enroll --enroll-secret=enrollpw --mspid=Org1MSP
-      kubectl hlf ca enroll --name=org1-ca --namespace $NAMESPACE \
+      kubectl hlf ca enroll --name=org1-ca --namespace "$NAMESPACE" \
         --user=admin --secret=adminpw --mspid Org1MSP \
         --ca-name tlsca  --output org1msp-tlsca.yaml
 
     # create org1 msp sign id
     # (admin user already registered in org1-ca in prev step)
     - |
-      kubectl hlf ca enroll --name=org1-ca --namespace $NAMESPACE \
+      kubectl hlf ca enroll --name=org1-ca --namespace "$NAMESPACE" \
         --user=admin --secret=adminpw --mspid Org1MSP \
         --ca-name ca  --output org1msp.yaml
-      kubectl hlf identity create --name org1-admin --namespace $NAMESPACE \
-        --ca-name org1-ca --ca-namespace $NAMESPACE \
+      kubectl hlf identity create --name org1-admin --namespace "$NAMESPACE" \
+        --ca-name org1-ca --ca-namespace "$NAMESPACE" \
         --ca ca --mspid Org1MSP --enroll-id admin --enroll-secret adminpw
 
     # create secret with creds to be used by the channel
     - |
-      kubectl create secret generic wallet --namespace $NAMESPACE \
+      kubectl create secret generic wallet --namespace "$NAMESPACE" \
         --from-file=org1msp.yaml=$PWD/org1msp.yaml \
         --from-file=orderermsp.yaml=$PWD/orderermsp.yaml
 
     # create channel
     - |
-      export PEER_ORG_SIGN_CERT=$(kubectl get fabriccas org1-ca -o=jsonpath='{.status.ca_cert}')
-      export PEER_ORG_TLS_CERT=$(kubectl get fabriccas org1-ca -o=jsonpath='{.status.tlsca_cert}')
+      export PEER_ORG_SIGN_CERT=$(kubectl get --namespace "${NAMESPACE}" fabriccas org1-ca -o=jsonpath='{.status.ca_cert}')
+      export PEER_ORG_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabriccas org1-ca -o=jsonpath='{.status.tlsca_cert}')
       export IDENT_8=$(printf "%8s" "")
-      export ORDERER_TLS_CERT=$(kubectl get fabriccas ord-ca -o=jsonpath='{.status.tlsca_cert}' | sed -e "s/^/${IDENT_8}/" )
-      export ORDERER0_TLS_CERT=$(kubectl get fabricorderernodes ord-node0 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabriccas ord-ca -o=jsonpath='{.status.tlsca_cert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER0_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabricorderernodes ord-node0 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
 
       kubectl apply -f - <<EOF
       apiVersion: hlf.kungfusoftware.es/v1alpha1
       kind: FabricMainChannel
       metadata:
         name: chan
+        namespace: "${NAMESPACE}"
       spec:
         name: chan
         adminOrdererOrganizations:
@@ -272,30 +267,30 @@ setup-hlf:
         peerOrganizations:
           - mspID: Org1MSP
             caName: "org1-ca"
-            caNamespace: "default"
+            caNamespace: "${NAMESPACE}"
         externalPeerOrganizations: []
         identities:
           OrdererMSP:
             secretKey: orderermsp.yaml
             secretName: wallet
-            secretNamespace: default
+            secretNamespace: "${NAMESPACE}"
           Org1MSP:
             secretKey: org1msp.yaml
             secretName: wallet
-            secretNamespace: default
+            secretNamespace: "${NAMESPACE}"
         ordererOrganizations:
           - caName: "ord-ca"
-            caNamespace: "default"
+            caNamespace: "${NAMESPACE}"
             externalOrderersToJoin:
               - host: ord-node0
                 port: 7053
             mspID: OrdererMSP
             ordererEndpoints:
-              - orderer0-ord.localho.st:443
+              - orderer0-ord.${NAMESPACE}.localho.st:443
             orderersToJoin: []
         externalOrdererOrganizations: []
         orderers:
-          - host: orderer0-ord.localho.st
+          - host: orderer0-ord.${NAMESPACE}.localho.st
             port: 443
             tlsCert: |-
       ${ORDERER0_TLS_CERT}
@@ -305,31 +300,32 @@ setup-hlf:
     # join a peer to the channel to make it real
     - |
       export IDENT_8=$(printf "%8s" "")
-      export ORDERER0_TLS_CERT=$(kubectl get fabricorderernodes ord-node0 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER0_TLS_CERT=$(kubectl get --namespace "$NAMESPACE" fabricorderernodes ord-node0 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
 
       kubectl apply -f - <<EOF
       apiVersion: hlf.kungfusoftware.es/v1alpha1
       kind: FabricFollowerChannel
       metadata:
         name: chan-org1msp
+        namespace: "${NAMESPACE}"
       spec:
         anchorPeers:
-          - host: peer0-org1.localho.st
+          - host: peer0-org1.${NAMESPACE}.localho.st
             port: 443
         hlfIdentity:
           secretKey: org1msp.yaml
           secretName: wallet
-          secretNamespace: default
+          secretNamespace: "${NAMESPACE}"
         mspId: Org1MSP
         name: chan
         externalPeersToJoin: []
         orderers:
           - certificate: |
       ${ORDERER0_TLS_CERT}
-            url: grpcs://ord-node0.default:7050
+            url: grpcs://ord-node0.${NAMESPACE}:7050
         peersToJoin:
           - name: org1-peer0
-            namespace: default
+            namespace: "${NAMESPACE}"
       EOF
 
     # launch UI/API
@@ -339,13 +335,13 @@ setup-hlf:
       kind: FabricNetworkConfig
       metadata:
         name: nc
-        namespace: default
+        namespace: "${NAMESPACE}"
       spec:
         channels:
           - chan
         identities:
           - name: org1-admin
-            namespace: default
+            namespace: "${NAMESPACE}"
         internal: false
         namespaces: []
         organization: ''
@@ -354,11 +350,12 @@ setup-hlf:
           - OrdererMSP
         secretName: nc-networkconfig
       EOF
-      export API_HOST=operator-api.localho.st
+    - |
+      export API_HOST=operator-api.${NAMESPACE}.localho.st
       export HLF_SECRET_NAME="nc-networkconfig"
       export HLF_MSPID="Org1MSP"
       export HLF_SECRET_KEY="config.yaml" # e.g. networkConfig.yaml
-      export HLF_USER="org1-admin-default"
-      kubectl hlf operatorapi create --name=operator-api --namespace $NAMESPACE --hosts=$API_HOST --ingress-class-name=istio \
+      export HLF_USER="org1-admin-${NAMESPACE}"
+      kubectl hlf operatorapi create --name=operator-api --namespace "$NAMESPACE" --hosts=$API_HOST --ingress-class-name=istio \
         --hlf-mspid="${HLF_MSPID}" --hlf-secret="${HLF_SECRET_NAME}" --hlf-secret-key="${HLF_SECRET_KEY}" \
         --hlf-user="${HLF_USER}" --version "v0.0.17-beta9"
