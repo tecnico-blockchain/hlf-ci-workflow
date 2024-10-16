@@ -288,7 +288,7 @@ setup-hlf:
           - caName: "ord-ca"
             caNamespace: "${NAMESPACE}"
             externalOrderersToJoin:
-              - host: ord-node0
+              - host: ord-node0.${NAMESPACE}
                 port: 7053
             mspID: OrdererMSP
             ordererEndpoints:
