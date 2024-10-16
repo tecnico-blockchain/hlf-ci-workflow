@@ -5,8 +5,8 @@ build-chaincode-container-image:
   script:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
-      --destination "${CI_REGISTRY_IMAGE}:rev-${CI_COMMIT_SHORT_SHA}"
+      --dockerfile "${CI_PROJECT_DIR}/chaincode/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/chaincode:rev-${CI_COMMIT_SHORT_SHA}"
 
 deploy-chaincode:
   image:
@@ -80,7 +80,7 @@ deploy-chaincode:
 
     # start/update chaincode container
     - |
-      kubectl hlf externalchaincode sync --image=${CI_REGISTRY_IMAGE}:rev-${CI_COMMIT_SHORT_SHA} \
+      kubectl hlf externalchaincode sync --image=${CI_REGISTRY_IMAGE}/chaincode:rev-${CI_COMMIT_SHORT_SHA} \
         --name=$CHAINCODE_NAME \
         --namespace=$NAMESPACE \
         --package-id=$PACKAGE_ID \
