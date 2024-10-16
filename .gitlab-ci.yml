@@ -4,7 +4,7 @@ build-chaincode-container-image:
     entrypoint: [""]
   script:
     - /kaniko/executor
-      --context "${CI_PROJECT_DIR}"
+      --context "${CI_PROJECT_DIR}/chaincode"
       --dockerfile "${CI_PROJECT_DIR}/chaincode/Dockerfile"
       --destination "${CI_REGISTRY_IMAGE}/chaincode:rev-${CI_COMMIT_SHORT_SHA}"
 
