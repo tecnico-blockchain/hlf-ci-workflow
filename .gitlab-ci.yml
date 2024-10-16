@@ -139,12 +139,22 @@ setup-hlf:
       kubectl delete fabricoperatorapis.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricorderernodes.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricpeers.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabriccas.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricchaincode.hlf.kungfusoftware.es --namespace $NAMESPACE --all
-      kubectl delete fabricmainchannels --namespace $NAMESPACE --all
       kubectl delete fabricfollowerchannels --namespace $NAMESPACE --all
+      kubectl delete fabricmainchannels --namespace $NAMESPACE --all
       kubectl delete fabricidentities.hlf.kungfusoftware.es --namespace $NAMESPACE --all
+      kubectl delete fabriccas.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete --namespace $NAMESPACE secrets wallet || true
+    - |
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricoperatorapis.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricorderernodes.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricpeers.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricchaincode.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricfollowerchannels.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricmainchannels.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabricidentities.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete fabriccas.hlf.kungfusoftware.es --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete secrets wallet
 
     # create org1
     - |
