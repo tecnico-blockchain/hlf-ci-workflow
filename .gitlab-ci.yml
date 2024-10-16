@@ -129,8 +129,9 @@ setup-hlf:
 
       # bail if everything is set up already
       if kubectl get --namespace "$NAMESPACE" fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
-        # Already setup, just wait for the last critical step to finish
-        kubectl wait --namespace "$NAMESPACE" --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
+        # Already setup, just wait for the last critical steps to finish
+        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es chan
+        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
         exit 0
       fi
 
@@ -312,6 +313,7 @@ setup-hlf:
       ${ORDERER0_TLS_CERT}
 
       EOF
+    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es chan
 
     # join a peer to the channel to make it real
     - |
