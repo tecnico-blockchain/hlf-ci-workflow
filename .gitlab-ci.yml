@@ -112,6 +112,8 @@ build-app-container-image:
       --context "${CI_PROJECT_DIR}/app"
       --dockerfile "${CI_PROJECT_DIR}/app/Dockerfile"
       --destination "${CI_REGISTRY_IMAGE}/app:rev-${CI_COMMIT_SHORT_SHA}"
+      --ignore-path=/product_uuid
+    # --ignore-path=/product_uuid is a fix for multi-stage builds (see https://github.com/GoogleContainerTools/kaniko/issues/2164#issuecomment-1450264605)
 
 deploy-app:
   image:
