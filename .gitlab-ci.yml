@@ -134,7 +134,7 @@ deploy-app:
 
     # initial deployment
     - |
-      if ! ( kubectl get --namespace "$NAMESPACE" deployment app && kubectl get --namespace "$NAMESPACE" networking.istio.io/v1/VirtualService app ) 2>/dev/null ; then
+      if ! ( kubectl get --namespace "$NAMESPACE" deployment app && kubectl get --namespace "$NAMESPACE" virtualservice.networking.istio.io app ) 2>/dev/null ; then
         kubectl apply -f .app-k8s.yml
       fi
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running deployment app
