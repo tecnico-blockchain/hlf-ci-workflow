@@ -116,6 +116,10 @@ build-app-container-image:
 deploy-app:
   image:
     name: alpine:latest
+  needs:
+    - build-chaincode-container-image
+    - setup-hlf
+    - deploy-chaincode
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
