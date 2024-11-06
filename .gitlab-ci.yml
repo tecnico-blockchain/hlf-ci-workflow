@@ -17,7 +17,7 @@ deploy-chaincode:
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
-      apk add kubectl git curl
+      apk add kubectl git curl envsubst
       (
         set -x; cd "$(mktemp -d)" &&
         OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
@@ -125,7 +125,7 @@ deploy-app:
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
-      apk add kubectl git curl kustomize
+      apk add kubectl git curl kustomize envsubst
 
     - |
       NAMESPACE=hlf
@@ -149,7 +149,7 @@ setup-hlf:
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
-      apk add kubectl git curl
+      apk add kubectl git curl envsubst
       (
         set -x; cd "$(mktemp -d)" &&
         OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
