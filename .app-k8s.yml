@@ -33,15 +33,15 @@ spec:
         ports:
         - containerPort: 8080
         volumeMounts:
-        - mountPath: $(TLS_CERT_PATH)
+        - mountPath: /config/cacert.pem
           name: ca-cert
           subPath: cacert.pem
           readOnly: true
-        - mountPath: $(KEY_DIRECTORY_PATH)/key.pem
+        - mountPath: /config/user-key/key.pem
           subPath: key.pem
           name: user
           readOnly: true
-        - mountPath: $(CERT_DIRECTORY_PATH)/cert.pem
+        - mountPath: /config/user-cert/cert.pem
           subPath: cert.pem
           name: user
           readOnly: true
