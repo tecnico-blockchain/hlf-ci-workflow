@@ -125,23 +125,21 @@ deploy-app:
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
-      apk add kubectl git curl kustomize envsubst
+      apk add kubectl git curl envsubst
 
     - |
-      NAMESPACE=hlf
+      export NAMESPACE=hlf
       export APP_NAME=app
       export APP_IMAGE="${CI_REGISTRY_IMAGE}/app:rev-${CI_COMMIT_SHORT_SHA}"
+      export ORG=org1
+      export PEER=peer0
+      export USER=admin
 
-    # initial deployment
-    - |
-      if ! ( kubectl get --namespace "$NAMESPACE" deployment app && kubectl get --namespace "$NAMESPACE" virtualservice.networking.istio.io app ) 2>/dev/null ; then
-        envsubst < .app-k8s.yml | kubectl apply --namespace "$NAMESPACE" -f -
-      fi
-      kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running deployment app
+    # deploy
+    - envsubst < .app-k8s.yml | kubectl apply --namespace "$NAMESPACE" -f -
 
-    # update image
-    - |
-      kubectl set image --namespace "$NAMESPACE" deployment/app app="$APP_IMAGE"
+    # wait for readyness
+    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running deployment app
 
 setup-hlf:
   image:

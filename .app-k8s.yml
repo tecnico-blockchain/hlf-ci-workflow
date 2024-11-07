@@ -20,8 +20,39 @@ spec:
           value: "$APP_NAME"
         - name: PORT
           value: "8080"
+        - name: PEER_ENDPOINT
+          value: "$PEER-$ORG.$NAMESPACE.localho.st:443"
+        - name: PEER_HOST_ALIAS
+          value: "$PEER-$ORG.$NAMESPACE.localho.st"
+        - name: TLS_CERT_PATH
+          value: /config/cacert.pem
+        - name: KEY_DIRECTORY_PATH
+          value: /config/user-key
+        - name: CERT_DIRECTORY_PATH
+          value: /config/user-cert
         ports:
         - containerPort: 8080
+        volumeMounts:
+        - mountPath: $(TLS_CERT_PATH)
+          name: ca-cert
+          subPath: cacert.pem
+          readOnly: true
+        - mountPath: $(KEY_DIRECTORY_PATH)/key.pem
+          subPath: key.pem
+          name: user
+          readOnly: true
+        - mountPath: $(CERT_DIRECTORY_PATH)/cert.pem
+          subPath: cert.pem
+          name: user
+          readOnly: true
+      volumes:
+      - name: ca-cert
+        secret:
+          secretName: "$ORG-$PEER-cacert" # managed by operator
+      - name: user
+        secret:
+          secretName: "$ORG-$USER" # managed by operator
+
 ---
 apiVersion: v1
 kind: Service
