@@ -48,7 +48,7 @@ spec:
       volumes:
       - name: ca-cert
         secret:
-          secretName: "$ORG-$PEER-cacert" # managed by operator
+          secretName: "$ORG-$PEER-tlsrootcert" # managed by operator
       - name: user
         secret:
           secretName: "$ORG-$USER" # managed by operator
