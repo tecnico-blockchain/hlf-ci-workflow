@@ -94,12 +94,10 @@ spec:
       - name: frontend
         image: "$FRONTEND_IMAGE"
         env:
-        - name: PORT
-          value: "8080"
         - name: API_ENDPOINT
           value: "http://$REST_API_HOST/"
         ports:
-        - containerPort: 8080
+        - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -111,8 +109,8 @@ metadata:
 spec:
   ports:
   - name: http
-    port: 8080
-    targetPort: 8080
+    port: 80
+    targetPort: 80
   selector:
     app: app-frontend
 ---
