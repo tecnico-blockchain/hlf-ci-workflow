@@ -103,7 +103,7 @@ deploy-chaincode:
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel=chan
 
-build-app-rest-api-container-image:
+build-rest-api-container-image:
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
@@ -115,7 +115,7 @@ build-app-rest-api-container-image:
       --ignore-path=/product_uuid
     # --ignore-path=/product_uuid is a fix for multi-stage builds (see https://github.com/GoogleContainerTools/kaniko/issues/2164#issuecomment-1450264605)
 
-build-app-frontend-container-image:
+build-frontend-container-image:
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
