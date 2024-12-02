@@ -103,15 +103,27 @@ deploy-chaincode:
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel=chan
 
-build-app-container-image:
+build-app-rest-api-container-image:
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   script:
     - /kaniko/executor
-      --context "${CI_PROJECT_DIR}/app"
-      --dockerfile "${CI_PROJECT_DIR}/app/Dockerfile"
-      --destination "${CI_REGISTRY_IMAGE}/app:rev-${CI_COMMIT_SHORT_SHA}"
+      --context "${CI_PROJECT_DIR}/rest-api"
+      --dockerfile "${CI_PROJECT_DIR}/rest-api/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/rest-api:rev-${CI_COMMIT_SHORT_SHA}"
+      --ignore-path=/product_uuid
+    # --ignore-path=/product_uuid is a fix for multi-stage builds (see https://github.com/GoogleContainerTools/kaniko/issues/2164#issuecomment-1450264605)
+
+build-app-frontend-container-image:
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/frontend"
+      --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/frontend:rev-${CI_COMMIT_SHORT_SHA}"
       --ignore-path=/product_uuid
     # --ignore-path=/product_uuid is a fix for multi-stage builds (see https://github.com/GoogleContainerTools/kaniko/issues/2164#issuecomment-1450264605)
 
@@ -121,7 +133,8 @@ deploy-app:
   needs:
     - setup-hlf
     - deploy-chaincode
-    - build-app-container-image
+    - build-rest-api-container-image
+    - build-frontend-container-image
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
@@ -130,7 +143,10 @@ deploy-app:
     - |
       export NAMESPACE=hlf
       export APP_NAME=app
-      export APP_IMAGE="${CI_REGISTRY_IMAGE}/app:rev-${CI_COMMIT_SHORT_SHA}"
+      export REST_API_HOST=rest-api.localho.st
+      export FRONTEND_HOST=app.localho.st
+      export REST_API_IMAGE="${CI_REGISTRY_IMAGE}/rest-api:rev-${CI_COMMIT_SHORT_SHA}"
+      export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/frontend:rev-${CI_COMMIT_SHORT_SHA}"
       export ORG=org1
       export PEER=peer0
       export USER=admin
@@ -139,7 +155,7 @@ deploy-app:
     - envsubst < .app-k8s.yml | kubectl apply --namespace "$NAMESPACE" -f -
 
     # wait for readyness
-    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running deployment app
+    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running deployment/app-rest-api deployment/app-frontend
 
 setup-hlf:
   image:

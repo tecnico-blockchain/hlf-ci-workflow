@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: rest-api
-        image: "$APP_API_IMAGE"
+        image: "$REST_API_IMAGE"
         env:
         - name: APP_NAME
           value: "$APP_NAME"
@@ -84,12 +84,12 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: "$APP_FRONTEND_IMAGE"
+        image: "$FRONTEND_IMAGE"
         env:
         - name: PORT
           value: "8080"
         - name: API_ENDPOINT
-          value: "http://$API_HOST/"
+          value: "http://$REST_API_HOST/"
         ports:
         - containerPort: 8080
 ---
@@ -121,8 +121,8 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "$APP_HOST"
-    - "$API_HOST"
+    - "$FRONTEND_HOST"
+    - "$REST_API_HOST"
 ---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
@@ -130,7 +130,7 @@ metadata:
   name: app-rest-api
 spec:
   hosts:
-  - "$API_HOST"
+  - "$REST_API_HOST"
   gateways:
   - app-gateway
   http:
