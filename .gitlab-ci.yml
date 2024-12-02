@@ -150,6 +150,9 @@ deploy-app:
       export ORG=org1
       export PEER=peer0
       export USER=admin
+      export CHANNEL_NAME=chan
+      export CHAINCODE_NAME="${CI_PROJECT_NAME}"
+      export MSP_ID=Org1MSP
 
     # deploy
     - envsubst < .app-k8s.yml | kubectl apply --namespace "$NAMESPACE" -f -

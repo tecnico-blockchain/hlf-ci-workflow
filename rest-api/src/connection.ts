@@ -17,7 +17,7 @@ const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', peerEndpoint.split(':')[0]
 console.log("keyPath " + keyPath);
 console.log("certPath " + certPath);
 console.log("tlsCertPath " + tlsCertPath);
-console.log("peerEndpoint" + peerEndpoint);
+console.log("peerEndpoint " + peerEndpoint);
 console.log("peerHostAlias " + peerHostAlias);
 
 export class Connection {
