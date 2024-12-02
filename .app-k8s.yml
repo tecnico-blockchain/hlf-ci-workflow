@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: app-rest-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: app
+      app: app-rest-api
   template:
     metadata:
       labels:
-        app: app
+        app: app-rest-api
     spec:
       containers:
-      - name: app
-        image: "$APP_IMAGE"
+      - name: rest-api
+        image: "$APP_API_IMAGE"
         env:
         - name: APP_NAME
           value: "$APP_NAME"
@@ -52,22 +52,61 @@ spec:
       - name: user
         secret:
           secretName: "$ORG-$USER" # managed by operator
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: app
+  name: app-rest-api
   labels:
-    app: app
-    service: app
+    app: app-rest-api
+    service: app-rest-api
 spec:
   ports:
   - name: http
     port: 8080
     targetPort: 8080
   selector:
-    app: app
+    app: app-rest-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-frontend
+  template:
+    metadata:
+      labels:
+        app: app-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "$APP_FRONTEND_IMAGE"
+        env:
+        - name: PORT
+          value: "8080"
+        - name: API_ENDPOINT
+          value: "http://$API_HOST/"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-frontend
+  labels:
+    app: app-frontend
+    service: app-frontend
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: app-frontend
 ---
 apiVersion: networking.istio.io/v1
 kind: Gateway
@@ -82,15 +121,16 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "app.localho.st"
+    - "$APP_HOST"
+    - "$API_HOST"
 ---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: app
+  name: app-rest-api
 spec:
   hosts:
-  - "app.localho.st"
+  - "$API_HOST"
   gateways:
   - app-gateway
   http:
@@ -99,6 +139,21 @@ spec:
         prefix: /
     route:
     - destination:
-        port:
-          number: 8080
-        host: app 
+        host: app-rest-api
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: app-frontend
+spec:
+  hosts:
+  - "$FRONTEND_HOST"
+  gateways:
+  - app-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: app-frontend
