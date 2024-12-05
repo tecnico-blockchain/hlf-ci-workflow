@@ -3,6 +3,17 @@ const utf8Decoder = new TextDecoder();
 import { Connection } from "./connection";
 export class AssetRouter {
     public routes(app: any): void {
+        app.route('/init')
+            .post((req: Request, res: Response) => {
+                var response;
+                try {
+                    Connection.contract.submitTransaction('InitLedger');
+                    response = ({ "status": 0, "message": "Update success" });
+                } catch (error) {
+                    response = ({ "status": -1, "message": "Something went wrong" });
+                }
+                res.status(200).send(response);
+            })
         app.route('/list')
             .get(async (req: Request, res: Response) => {
                 const resultBytes = Connection.contract.evaluateTransaction('GetAllAssets');
