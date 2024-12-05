@@ -4,7 +4,7 @@ import { Connection } from "./connection";
 export class AssetRouter {
     public routes(app: any): void {
         app.route('/init')
-            .post((req: Request, res: Response) => {
+            .post(async (req: Request, res: Response) => {
                 var response;
                 try {
                     await Connection.contract.submitTransaction('InitLedger');
@@ -22,7 +22,7 @@ export class AssetRouter {
                 res.status(200).send(result);
             })
         app.route('/create')
-            .post((req: Request, res: Response) => {
+            .post(async (req: Request, res: Response) => {
                 console.log(req.body)
                 var Id = Date.now();
                 var asset = {
@@ -42,7 +42,7 @@ export class AssetRouter {
                 res.status(200).send(response);
             })
         app.route('/update')
-            .post((req: Request, res: Response) => {
+            .post(async (req: Request, res: Response) => {
                 console.log(req.body)
                 var asset = {
                     ID: req.body.ID + "",
@@ -61,7 +61,7 @@ export class AssetRouter {
                 res.status(200).send(response);
             })
         app.route('/delete')
-            .post((req: Request, res: Response) => {
+            .post(async (req: Request, res: Response) => {
                 console.log(req.body)
                 var response;
                 try {
