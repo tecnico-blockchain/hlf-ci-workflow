@@ -21,14 +21,18 @@ export class AssetRouter {
                     Size: req.body.Size,
                     AppraisedValue: req.body.AppraisedValue,
                 })
-                Connection.contract.submitTransaction('CreateAsset', json);
-                var response = ({ "AssetId": Id })
+                var response;
+                try {
+                    Connection.contract.submitTransaction('CreateAsset', json);
+                    response = ({ "status": 0, "AssetId": Id, "message": "Update success" });
+                } catch (error) {
+                    response = ({ "status": -1, "message": "Something went wrong" });
+                }
                 res.status(200).send(response);
             })
         app.route('/update')
             .post((req: Request, res: Response) => {
                 console.log(req.body)
-                var Id = Date.now();
                 var json = JSON.stringify({
                     ID: req.body.ID,
                     Owner: req.body.Owner,
