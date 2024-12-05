@@ -34,8 +34,7 @@ export class AssetDialogComponent implements OnInit {
       this.aseet.Color = data['Color'];
       this.aseet.Size = data['Size'];
       this.aseet.ID = data['Id'];
-      var owner = JSON.parse(data['Owner'])
-      this.aseet.Owner = owner.user;
+      this.aseet.Owner = data['Owner'];
     }
 
   }
@@ -48,25 +47,23 @@ export class AssetDialogComponent implements OnInit {
     this.httpOptions = {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-
       })
     }
     if (this.data) {
-      var request = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": { "org": "Org1MSP", "user": this.form.value.Owner } };
+      var request = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
       this._http.post<any>(URLS.UPDATE, JSON.stringify(request), this.httpOptions).subscribe((data: any) => {
         console.log(data);
-       var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": JSON.stringify({ "org": "Org1MSP", "user": this.form.value.Owner }) };
+       var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
         this.dialogRef.close(response)
       })
     }else{
       this._http.post<any>(URLS.CREATE, JSON.stringify(this.form.value), this.httpOptions).subscribe((data: any) => {
         console.log(data);
-        var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": data.AssetId, "Size": this.form.value.Size, "Owner": JSON.stringify({ "org": "Org1MSP", "user": this.form.value.Owner }) };
+        var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": data.AssetId, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
         this.dialogRef.close(response)
       })
     }
-   
+
   }
   close() {
     this.dialogRef.close();
