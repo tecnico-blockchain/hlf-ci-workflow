@@ -27,10 +27,10 @@ export class AssetRouter {
                 var Id = Date.now();
                 var asset = {
                     ID: Id + "",
-                    Owner: req.body.Owner,
-                    Color: req.body.Color,
-                    Size: req.body.Size,
-                    AppraisedValue: req.body.AppraisedValue,
+                    Owner: req.body.Owner + "",
+                    Color: req.body.Color + "",
+                    Size: req.body.Size + "",
+                    AppraisedValue: req.body.AppraisedValue + "",
                 };
                 var response;
                 try {
@@ -45,11 +45,11 @@ export class AssetRouter {
             .post((req: Request, res: Response) => {
                 console.log(req.body)
                 var asset = {
-                    ID: req.body.ID,
-                    Owner: req.body.Owner,
-                    Color: req.body.Color,
-                    Size: req.body.Size,
-                    AppraisedValue: req.body.AppraisedValue,
+                    ID: req.body.ID + "",
+                    Owner: req.body.Owner + "",
+                    Color: req.body.Color + "",
+                    Size: req.body.Size + "",
+                    AppraisedValue: req.body.AppraisedValue + "",
                 };
                 var response;
                 try {
