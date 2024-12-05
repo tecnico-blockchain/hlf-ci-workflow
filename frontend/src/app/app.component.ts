@@ -21,7 +21,7 @@ export class AppComponent implements OnInit {
   httpOptions;
   title = 'frontend';
   assets = [];
-  displayedColumns: String[] = ["position", "id",'owner','color','appraisedValue',"size" ,'transfer','edit','delete'];
+  displayedColumns: String[] = ["position", "id",'owner','color','appraisedValue',"size",'edit','delete'];
   constructor(private _http: HttpClient, private dialog: MatDialog,private snackBar:MatSnackBar) {
     this.httpOptions = {
       headers: new HttpHeaders({
