@@ -7,7 +7,7 @@ export class AssetRouter {
             .post((req: Request, res: Response) => {
                 var response;
                 try {
-                    Connection.contract.submitTransaction('InitLedger');
+                    await Connection.contract.submitTransaction('InitLedger');
                     response = ({ "status": 0, "message": "Update success" });
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" });
@@ -34,7 +34,7 @@ export class AssetRouter {
                 };
                 var response;
                 try {
-                    Connection.contract.submitTransaction('CreateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
+                    await Connection.contract.submitTransaction('CreateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
                     response = ({ "status": 0, "AssetId": Id, "message": "Update success" });
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" });
@@ -53,7 +53,7 @@ export class AssetRouter {
                 };
                 var response;
                 try {
-                    Connection.contract.submitTransaction('UpdateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
+                    await Connection.contract.submitTransaction('UpdateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
                     response = ({ "status": 0, "message": "Update success" })
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" })
@@ -65,7 +65,7 @@ export class AssetRouter {
                 console.log(req.body)
                 var response;
                 try {
-                    Connection.contract.submitTransaction('DeleteAsset', req.body.id);
+                    await Connection.contract.submitTransaction('DeleteAsset', req.body.id);
                     response = ({ "status": 0, "message": "Delete success" })
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" })
