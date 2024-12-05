@@ -28,10 +28,10 @@ type SmartContract struct {
 // Asset describes basic details of what makes up a simple asset
 type Asset struct {
 	ID             string `json:"ID"`
-	Color          string `json:"color"`
-	Size           int    `json:"size"`
-	Owner          string `json:"owner"`
-	AppraisedValue int    `json:"appraisedValue"`
+	Color          string `json:"Color"`
+	Size           int    `json:"Size"`
+	Owner          string `json:"Owner"`
+	AppraisedValue int    `json:"AppraisedValue"`
 }
 
 // QueryResult structure used for handling result of query
