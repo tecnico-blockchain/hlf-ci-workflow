@@ -50,10 +50,13 @@ export class AppComponent implements OnInit {
   delete(asset:any,index:number){
     this._http.post<any>(URLS.DELETE,JSON.stringify({"id":asset.ID}),this.httpOptions).subscribe((data:any) => {
       console.log(data);
-      this.dataSource.data.splice(index,1)
-      this.dataSource._updateChangeSubscription();
-      this.snackBar.open(asset.ID+ ' deleted', '', {duration:1000
-      });
+      if (data.status == 0) {
+        this.dataSource.data.splice(index,1)
+        this.dataSource._updateChangeSubscription();
+        this.snackBar.open(asset.ID+ ' deleted', '', {duration:1000});
+      } else {
+        this.snackBar.open('Failed to delete ' + asset.ID, '', {duration:1000});
+      }
        })
   }
   addNewAsset(){
