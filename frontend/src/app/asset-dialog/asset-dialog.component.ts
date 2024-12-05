@@ -53,14 +53,22 @@ export class AssetDialogComponent implements OnInit {
       var request = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
       this._http.post<any>(URLS.UPDATE, JSON.stringify(request), this.httpOptions).subscribe((data: any) => {
         console.log(data);
-       var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
-        this.dialogRef.close(response)
+        if (data.status == 0) {
+          var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": this.data.ID, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
+          this.dialogRef.close(response);
+        } else {
+          alert("Error updating asset");
+        }
       })
     }else{
       this._http.post<any>(URLS.CREATE, JSON.stringify(this.form.value), this.httpOptions).subscribe((data: any) => {
         console.log(data);
-        var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": data.AssetId, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
-        this.dialogRef.close(response)
+        if (data.status == 0) {
+          var response = { "Color": this.form.value.Color, "AppraisedValue": this.form.value.AppraisedValue, "ID": data.AssetId, "Size": this.form.value.Size, "Owner": this.form.value.Owner };
+          this.dialogRef.close(response);
+        } else {
+          alert("Error creating asset");
+        }
       })
     }
 
