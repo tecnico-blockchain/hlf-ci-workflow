@@ -14,16 +14,16 @@ export class AssetRouter {
             .post((req: Request, res: Response) => {
                 console.log(req.body)
                 var Id = Date.now();
-                var json = JSON.stringify({
+                var asset = {
                     ID: Id + "",
                     Owner: req.body.Owner,
                     Color: req.body.Color,
                     Size: req.body.Size,
                     AppraisedValue: req.body.AppraisedValue,
-                })
+                };
                 var response;
                 try {
-                    Connection.contract.submitTransaction('CreateAsset', json);
+                    Connection.contract.submitTransaction('CreateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
                     response = ({ "status": 0, "AssetId": Id, "message": "Update success" });
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" });
@@ -33,16 +33,16 @@ export class AssetRouter {
         app.route('/update')
             .post((req: Request, res: Response) => {
                 console.log(req.body)
-                var json = JSON.stringify({
+                var asset = {
                     ID: req.body.ID,
                     Owner: req.body.Owner,
                     Color: req.body.Color,
                     Size: req.body.Size,
                     AppraisedValue: req.body.AppraisedValue,
-                })
+                };
                 var response;
                 try {
-                    Connection.contract.submitTransaction('UpdateAsset', json);
+                    Connection.contract.submitTransaction('UpdateAsset', asset.ID, asset.Color, asset.Size, asset.Owner, asset.AppraisedValue);
                     response = ({ "status": 0, "message": "Update success" })
                 } catch (error) {
                     response = ({ "status": -1, "message": "Something went wrong" })
