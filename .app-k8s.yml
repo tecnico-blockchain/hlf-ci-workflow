@@ -140,10 +140,7 @@ spec:
   gateways:
   - app-gateway
   http:
-  - match:
-    - uri:
-        prefix: /
-    route:
+  - route:
     - destination:
         host: app-rest-api
 ---
@@ -157,9 +154,6 @@ spec:
   gateways:
   - app-gateway
   http:
-  - match:
-    - uri:
-        prefix: /
-    route:
+  - route:
     - destination:
         host: app-frontend
