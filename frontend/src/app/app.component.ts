@@ -26,8 +26,6 @@ export class AppComponent implements OnInit {
     this.httpOptions = {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-
       })
     }
     this._http.get<any>(URLS.LIST,this.httpOptions).subscribe(data => {
@@ -35,7 +33,7 @@ export class AppComponent implements OnInit {
     })
   }
   ngOnInit() {
-    
+
  }
   editRow(asset:any,index:number){
     const dialogRef = this.dialog.open(AssetDialogComponent, {
