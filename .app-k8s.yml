@@ -143,6 +143,9 @@ spec:
   - route:
     - destination:
         host: app-rest-api
+    corsPolicy:
+      allowOrigins:
+        - exact: "$FRONTEND_HOST"
 ---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
