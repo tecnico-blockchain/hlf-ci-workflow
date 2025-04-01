@@ -1,0 +1,9 @@
+gitlabUrl: https://gitlab.rnl.tecnico.ulisboa.pt
+rbac:
+  create: true
+  clusterWideAccess: true
+serviceAccount:
+  name: gitlab-ci
+  create: true
+runners:
+  secret: gitlab-runner-secret
