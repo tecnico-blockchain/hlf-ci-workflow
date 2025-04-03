@@ -171,7 +171,7 @@ EOF
 2. Create a namespace on the kubernetes cluster for GitLab to use on its CI jobs: `kubectl create namespace gitlab-ci`.
 
 3. Save runner authentication token in kubernetes. 
-  1. Create a file named `runner-token.yml` with the following contents (replacing `<YOUR TOKEN HERE>` with the runner authentication token from the previous step):
+    1. Create a file named `runner-token.yml` with the following contents (replacing `<YOUR TOKEN HERE>` with the runner authentication token from the previous step):
     ```yaml
     apiVersion: v1
     kind: Secret
@@ -183,9 +183,9 @@ EOF
       runner-registration-token: "" # need to leave as an empty string for compatibility reasons
       runner-token: "<YOUR TOKEN HERE>"
     ```  
-  **WARNING: in a sensitive environment, place this file in a shreddable filesystem (e.g. not ZFS/Btrfs), and shred it after adding the secret to kubernetes.** 
+    **WARNING: in a sensitive environment, place this file in a shreddable filesystem (e.g. not ZFS/Btrfs), and shred it after adding the secret to kubernetes.**
   
-  2. Add the secret to kubernetes with `kubectl apply -f runner-token.yml`.
+    2. Add the secret to kubernetes with `kubectl apply -f runner-token.yml`.
 
 4. Install GitLab runner in the cluster:
 ```
@@ -197,14 +197,14 @@ helm install --namespace gitlab-ci gitlab-runner -f gitlab-runner-config.yml git
 For this to work, ensure `setup/gitlab-runner-config.yml` is in your current directory (or change the path in the command accordingly), and modify it with the desired GitLab instance URL if not using RNL's GitLab.
 
 5. Grant kubernetes access to your repository's container registry. You may skip this step if using a public registry (not RNL's GitLab).
-  1. Create a project access token in GitLab with the `read_registry` scope. You can set any expiration date (within your needs) and leave the role as `Guest`.
-     You can create this token in `Settings > Access tokens` from your repository.
+    1. Create a project access token in GitLab with the `read_registry` scope. You can set any expiration date (within your needs) and leave the role as `Guest`.
+    You can create this token in `Settings > Access tokens` from your repository.
   
-  2. Save the access token in your kubernetes cluster by running `kubectl create secret docker-registry pull-secret --docker-server=<your-registry-server> --docker-username=<your-username> --docker-password=<access-token> --docker-email=<your-email>` (note that you **must use your access token instead of your password**).
+    2. Save the access token in your kubernetes cluster by running `kubectl create secret docker-registry pull-secret --docker-server=<your-registry-server> --docker-username=<your-username> --docker-password=<access-token> --docker-email=<your-email>` (note that you **must use your access token instead of your password**).
     If using [RNL's GitLab](https://gitlab.rnl.tecnico.ulisboa.pt/), the registry server is `registry.rnl.tecnico.ulisboa.pt`.
     **WARNING: in a sensitive environment, manually construct the secret yaml definition (see kubernetes documentation) and add it with `kubectl apply`. This method exposes the access token in your shell history and to all other running processes (through the processe's arguments).**
 
-7. Run `kubectl apply -f init.yml`, where `init.yml` is the file in `setup/init.yml` from this repository.
+6. Run `kubectl apply -f init.yml`, where `init.yml` is the file in `setup/init.yml` from this repository.
 It will create a namespace for your HLF network (named `hlf`), grant it access to your container image repository (with the `pull-secret` from the previous), and allow the GitLab runner to control everything in the `hlf` namespace.
 
 ### Use it!
