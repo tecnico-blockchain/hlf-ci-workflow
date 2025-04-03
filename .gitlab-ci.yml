@@ -44,7 +44,7 @@ deploy-chaincode:
     # compute next chaincode seqnum
     - |
       CHAINCODE_NAME="${CI_PROJECT_NAME}"
-      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
+      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0 --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
       SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
       rm seq.txt
@@ -75,7 +75,7 @@ deploy-chaincode:
     - |
       for i in 0 1; do
         kubectl hlf chaincode install --path=./chaincode.tgz \
-          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.${NAMESPACE}
+          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i
       done
 
     # start/update chaincode container
@@ -92,7 +92,7 @@ deploy-chaincode:
     - |
       VERSION="rev-${CI_COMMIT_SHORT_SHA}"
 
-      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} \
+      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0 \
         --package-id=$PACKAGE_ID \
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel=chan
@@ -220,7 +220,7 @@ setup-hlf:
     # create org1
     - |
       kubectl hlf ca create --namespace "$NAMESPACE" --storage-class=standard --capacity=1Gi --istio-port=443 \
-        --name=org1-ca --enroll-id=enroll --enroll-pw=enrollpw --hosts=org1-ca.${NAMESPACE}.localho.st
+        --name=org1-ca --enroll-id=enroll --enroll-pw=enrollpw --hosts=org1-ca.localho.st
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
       
@@ -233,8 +233,8 @@ setup-hlf:
     - |
       for i in 0 1; do
         kubectl hlf peer create --namespace "$NAMESPACE" --statedb=leveldb --storage-class=standard --enroll-id=peer --mspid=Org1MSP \
-          --enroll-pw=peerpw --capacity=5Gi --name=org1-peer$i --ca-name=org1-ca.$NAMESPACE \
-          --hosts=peer$i-org1.${NAMESPACE}.localho.st --istio-port=443
+          --enroll-pw=peerpw --capacity=5Gi --name=org1-peer$i --ca-name=org1-ca \
+          --hosts=peer$i-org1.localho.st --istio-port=443
       done
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricpeers.hlf.kungfusoftware.es --all
@@ -242,22 +242,22 @@ setup-hlf:
     # create orderer org
     - |
       kubectl hlf ca create --namespace "$NAMESPACE" --storage-class=standard --capacity=1Gi --name=ord-ca \
-        --enroll-id=enroll --enroll-pw=enrollpw --hosts=ord-ca.${NAMESPACE}.localho.st --istio-port=443
+        --enroll-id=enroll --enroll-pw=enrollpw --hosts=ord-ca.localho.st --istio-port=443
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
 
     # create orderer user (shared for simplicity)
     - |
       kubectl hlf ca register --namespace "$NAMESPACE" --name=ord-ca --user=orderer --secret=ordererpw \
-        --type=orderer --enroll-id enroll --enroll-secret=enrollpw --mspid=OrdererMSP --ca-url="https://ord-ca.${NAMESPACE}.localho.st:443"
+        --type=orderer --enroll-id enroll --enroll-secret=enrollpw --mspid=OrdererMSP --ca-url="https://ord-ca.localho.st:443"
 
     # create orderers
     - |
       for i in 0 1 2; do
         kubectl hlf ordnode create --namespace "$NAMESPACE" \
           --storage-class=standard --enroll-id=orderer --mspid=OrdererMSP \
-          --enroll-pw=ordererpw --capacity=2Gi --name=ord-node$i --ca-name=ord-ca.$NAMESPACE \
-          --hosts=orderer$i-ord.${NAMESPACE}.localho.st --admin-hosts=admin-orderer$i-ord.${NAMESPACE}.localho.st --istio-port=443
+          --enroll-pw=ordererpw --capacity=2Gi --name=ord-node$i --ca-name=ord-ca \
+          --hosts=orderer$i-ord.localho.st --admin-hosts=admin-orderer$i-ord.localho.st --istio-port=443
       done
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricorderernodes.hlf.kungfusoftware.es --all
@@ -363,11 +363,11 @@ setup-hlf:
                 port: 7053
             mspID: OrdererMSP
             ordererEndpoints:
-              - orderer0-ord.${NAMESPACE}.localho.st:443
+              - orderer0-ord.localho.st:443
             orderersToJoin: []
         externalOrdererOrganizations: []
         orderers:
-          - host: orderer0-ord.${NAMESPACE}.localho.st
+          - host: orderer0-ord.localho.st
             port: 443
             tlsCert: |-
       ${ORDERER0_TLS_CERT}
@@ -388,7 +388,7 @@ setup-hlf:
         namespace: "${NAMESPACE}"
       spec:
         anchorPeers:
-          - host: peer0-org1.${NAMESPACE}.localho.st
+          - host: peer0-org1.localho.st
             port: 443
         hlfIdentity:
           secretKey: org1msp.yaml
@@ -400,7 +400,7 @@ setup-hlf:
         orderers:
           - certificate: |
       ${ORDERER0_TLS_CERT}
-            url: grpcs://ord-node0.${NAMESPACE}:7050
+            url: grpcs://ord-node0:7050
         peersToJoin:
           - name: org1-peer0
             namespace: "${NAMESPACE}"
@@ -429,11 +429,11 @@ setup-hlf:
         secretName: nc-networkconfig
       EOF
     - |
-      export API_HOST=operator-api.${NAMESPACE}.localho.st
+      export API_HOST=operator-api.localho.st
       export HLF_SECRET_NAME="nc-networkconfig"
       export HLF_MSPID="Org1MSP"
       export HLF_SECRET_KEY="config.yaml" # e.g. networkConfig.yaml
-      export HLF_USER="org1-admin-${NAMESPACE}"
+      export HLF_USER="org1-admin"
       kubectl hlf operatorapi create --name=operator-api --namespace "$NAMESPACE" --hosts=$API_HOST --ingress-class-name=istio \
         --hlf-mspid="${HLF_MSPID}" --hlf-secret="${HLF_SECRET_NAME}" --hlf-secret-key="${HLF_SECRET_KEY}" \
         --hlf-user="${HLF_USER}" --version "v0.0.17-beta9"

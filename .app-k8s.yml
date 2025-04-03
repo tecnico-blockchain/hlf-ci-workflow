@@ -35,9 +35,9 @@ spec:
         - name: TLS_CA_CERT_PATH
           value: /config/cacert.pem
         - name: PEER_ENDPOINT
-          value: "$PEER-$ORG.$NAMESPACE.localho.st:443"
+          value: "$PEER-$ORG.localho.st:443"
         - name: PEER_HOST_ALIAS
-          value: "$PEER-$ORG.$NAMESPACE.localho.st"
+          value: "$PEER-$ORG.localho.st"
         ports:
         - containerPort: 8080
         volumeMounts:
