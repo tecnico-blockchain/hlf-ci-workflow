@@ -165,7 +165,8 @@ EOF
 **Note:** If you wish to use a different domain from `localho.st` for your HLF network resources, you must change the configuration above (and point your domain to kubernetes' DNS).
 
 ### Create a GitLab Runner
-1. Create a GitLab CI project runner (Settings > CI/CD Settings > Runners > New project runner), with the option "Can run untagged jobs" enabled.
+1. Create a GitLab CI project runner (Settings > CI/CD Settings > Runners > New project runner), with the options "Can run untagged jobs" and "Lock to current projects" enabled.
+  While "Lock to current projects" isn't strictly necessary, it is highly recommended unless you are absolutely sure that other projects using the runner won't interfere with the kubernetes cluster associated with this runner.
   **Save the runner's authentication token.**
 
 2. Create a namespace on the kubernetes cluster for GitLab to use on its CI jobs: `kubectl create namespace gitlab-ci`.
@@ -191,12 +192,15 @@ EOF
 ```
 helm repo add gitlab https://charts.gitlab.io --force-update
 
-helm install --namespace gitlab-ci gitlab-runner -f gitlab-runner-config.yml gitlab/gitlab-runner
+helm install --namespace gitlab-ci gitlab-runner -f gitlab-runner-conf.yml gitlab/gitlab-runner
 ```
 
-For this to work, ensure `setup/gitlab-runner-config.yml` is in your current directory (or change the path in the command accordingly), and modify it with the desired GitLab instance URL if not using RNL's GitLab.
+For this to work, ensure `setup/gitlab-runner-conf.yml` is in your current directory (or change the path in the command accordingly), and modify it with the desired GitLab instance URL if not using RNL's GitLab.
 
-5. Grant kubernetes access to your repository's container registry. You may skip this step if using a public registry (not RNL's GitLab).
+5. Enable the Container Registry for your GitLab project (in Settings > General > Visibility, project features, permissions).
+If you don't do this, your CI jobs will try to push your images to DockerHub and likely fail with permission errors.
+
+6. Grant kubernetes access to your repository's container registry. You may skip this step if using a public registry (not RNL's GitLab).
     1. Create a project access token in GitLab with the `read_registry` scope. You can set any expiration date (within your needs) and leave the role as `Guest`.
     You can create this token in `Settings > Access tokens` from your repository.
   
@@ -204,11 +208,14 @@ For this to work, ensure `setup/gitlab-runner-config.yml` is in your current dir
     If using [RNL's GitLab](https://gitlab.rnl.tecnico.ulisboa.pt/), the registry server is `registry.rnl.tecnico.ulisboa.pt`.
     **WARNING: in a sensitive environment, manually construct the secret yaml definition (see kubernetes documentation) and add it with `kubectl apply`. This method exposes the access token in your shell history and to all other running processes (through the processe's arguments).**
 
-6. Run `kubectl apply -f init.yml`, where `init.yml` is the file in `setup/init.yml` from this repository.
+7. Run `kubectl apply -f init.yml`, where `init.yml` is the file in `setup/init.yml` from this repository.
 It will create a namespace for your HLF network (named `hlf`), grant it access to your container image repository (with the `pull-secret` from the previous), and allow the GitLab runner to control everything in the `hlf` namespace.
+
+You may need to run this command a few times until it succeeds. Testing encountered spurious errors while updating the service account created automatically with the `hlf` namespace.
 
 ### Use it!
 Try pushing a commit to the main branch. The CI pipeline should create your HLF network and deploy your application.
+
 
 ## Monitoring tips
 In this section we present a few tricks that can help you better monitor your deployment and troubleshoot any issues in it.
