@@ -33,6 +33,8 @@ deploy-chaincode:
 
       # TODO: streamline with tool
       NAMESPACE=hlf
+      CHAINCODE_NAME="chaincode"
+      CHAINCODE_LABEL="chaincode"
 
     # fetch secrets from k8s
     - | 
@@ -43,7 +45,6 @@ deploy-chaincode:
 
     # compute next chaincode seqnum
     - |
-      CHAINCODE_NAME="${CI_PROJECT_NAME}"
       kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0 --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
       SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
@@ -51,7 +52,6 @@ deploy-chaincode:
 
     # package chaincode
     - |
-      CHAINCODE_LABEL="${CI_PROJECT_NAME}"
       cat << METADATA-EOF > "metadata.json"
       {
           "type": "ccaas",
@@ -75,7 +75,7 @@ deploy-chaincode:
     - |
       for i in 0 1; do
         kubectl hlf chaincode install --path=./chaincode.tgz \
-          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i
+          --config=org1.yaml --language=node --label=$CHAINCODE_LABEL --user=admin --peer=org1-peer$i.${NAMESPACE}
       done
 
     # start/update chaincode container
@@ -92,7 +92,7 @@ deploy-chaincode:
     - |
       VERSION="rev-${CI_COMMIT_SHORT_SHA}"
 
-      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0 \
+      kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} \
         --package-id=$PACKAGE_ID \
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel=chan
