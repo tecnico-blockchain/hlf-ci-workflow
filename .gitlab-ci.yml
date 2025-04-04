@@ -35,6 +35,7 @@ deploy-chaincode:
       NAMESPACE=hlf
       CHAINCODE_NAME="chaincode"
       CHAINCODE_LABEL="chaincode"
+      CHANNEL_NAME=chan
 
     # fetch secrets from k8s
     - | 
@@ -45,7 +46,7 @@ deploy-chaincode:
 
     # compute next chaincode seqnum
     - |
-      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0 --channel=chan --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
+      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0 --channel="$CHANNEL_NAME" --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
       SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
       rm seq.txt
@@ -95,13 +96,13 @@ deploy-chaincode:
       kubectl hlf chaincode approveformyorg --config=org1.yaml --user=admin --peer=org1-peer0.${NAMESPACE} \
         --package-id=$PACKAGE_ID \
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
-        --policy="OR('Org1MSP.member')" --channel=chan
+        --policy="OR('Org1MSP.member')" --channel="$CHANNEL_NAME"
 
     # commit chaincode
     - |
       kubectl hlf chaincode commit --config=org1.yaml --user=admin --mspid=Org1MSP \
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
-        --policy="OR('Org1MSP.member')" --channel=chan
+        --policy="OR('Org1MSP.member')" --channel="$CHANNEL_NAME"
 
 build-rest-api-container-image:
   image:
@@ -151,7 +152,7 @@ deploy-app:
       export PEER=peer0
       export USER=admin
       export CHANNEL_NAME=chan
-      export CHAINCODE_NAME="${CI_PROJECT_NAME}"
+      export CHAINCODE_NAME="chain"
       export MSP_ID=Org1MSP
 
     # deploy
@@ -186,6 +187,8 @@ setup-hlf:
     # TODO: declarative (and non-hardcoded) topology config tool
     - |
       NAMESPACE=hlf
+      CHANNEL_NAME=chan
+
       PEER_IMAGE=hyperledger/fabric-peer
       PEER_VERSION=3.0.0
       ORDERER_IMAGE=hyperledger/fabric-orderer
@@ -196,8 +199,8 @@ setup-hlf:
       # bail if everything is set up already
       if kubectl get --namespace "$NAMESPACE" fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
         # Already setup, just wait for the last critical steps to finish
-        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es chan
-        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es chan-org1msp
+        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es "$CHANNEL_NAME"
+        kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricfollowerchannels.hlf.kungfusoftware.es "${CHANNEL_NAME}-org1msp"
         exit 0
       fi
 
@@ -324,10 +327,10 @@ setup-hlf:
       apiVersion: hlf.kungfusoftware.es/v1alpha1
       kind: FabricMainChannel
       metadata:
-        name: chan
+        name: "${CHANNEL_NAME}"
         namespace: "${NAMESPACE}"
       spec:
-        name: chan
+        name: "${CHANNEL_NAME}"
         adminOrdererOrganizations:
           - mspID: OrdererMSP
         adminPeerOrganizations:
@@ -421,7 +424,7 @@ setup-hlf:
       ${ORDERER3_TLS_CERT}
 
       EOF
-    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es chan
+    - kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es "${CHANNEL_NAME}"
 
     # join a peer to the channel to make it real
     - |
@@ -432,7 +435,7 @@ setup-hlf:
       apiVersion: hlf.kungfusoftware.es/v1alpha1
       kind: FabricFollowerChannel
       metadata:
-        name: chan-org1msp
+        name: "${CHANNEL_NAME}-org1msp"
         namespace: "${NAMESPACE}"
       spec:
         anchorPeers:
@@ -443,7 +446,7 @@ setup-hlf:
           secretName: wallet
           secretNamespace: "${NAMESPACE}"
         mspId: Org1MSP
-        name: chan
+        name: "${CHANNEL_NAME}"
         externalPeersToJoin: []
         orderers:
           - certificate: |
@@ -464,7 +467,7 @@ setup-hlf:
         namespace: "${NAMESPACE}"
       spec:
         channels:
-          - chan
+          - "${CHANNEL_NAME}"
         identities:
           - name: org1-admin
             namespace: "${NAMESPACE}"
