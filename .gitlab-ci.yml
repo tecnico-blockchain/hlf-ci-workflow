@@ -222,7 +222,7 @@ setup-hlf:
       kubectl wait --namespace "$NAMESPACE" --for=delete fabricidentities.hlf.kungfusoftware.es --all
       kubectl wait --namespace "$NAMESPACE" --for=delete fabriccas.hlf.kungfusoftware.es --all
       kubectl wait --namespace "$NAMESPACE" --for=delete secrets wallet
-      kubectl wait --namespace "$NAMESPACE" --for=delete pods --all
+      kubectl wait --namespace "$NAMESPACE" --for=delete --timeout=180s pods --all
 
     # create org1
     - |
