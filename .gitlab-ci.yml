@@ -430,6 +430,9 @@ setup-hlf:
     - |
       export IDENT_8=$(printf "%8s" "")
       export ORDERER0_TLS_CERT=$(kubectl get --namespace "$NAMESPACE" fabricorderernodes ord-node0 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER1_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabricorderernodes ord-node1 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER2_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabricorderernodes ord-node2 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
+      export ORDERER3_TLS_CERT=$(kubectl get --namespace "${NAMESPACE}" fabricorderernodes ord-node3 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
 
       kubectl apply -f - <<EOF
       apiVersion: hlf.kungfusoftware.es/v1alpha1
@@ -451,7 +454,16 @@ setup-hlf:
         orderers:
           - certificate: |
       ${ORDERER0_TLS_CERT}
-            url: grpcs://ord-node0:7050
+            url: grpcs://ord-node0.${NAMESPACE}:7050
+          - certificate: |
+      ${ORDERER1_TLS_CERT}
+            url: grpcs://ord-node1.${NAMESPACE}:7050
+          - certificate: |
+      ${ORDERER2_TLS_CERT}
+            url: grpcs://ord-node2.${NAMESPACE}:7050
+          - certificate: |
+      ${ORDERER3_TLS_CERT}
+            url: grpcs://ord-node3.${NAMESPACE}:7050
         peersToJoin:
           - name: org1-peer0
             namespace: "${NAMESPACE}"
