@@ -165,14 +165,17 @@ EOF
 **Note:** If you wish to use a different domain from `localho.st` for your HLF network resources, you must change the configuration above (and point your domain to kubernetes' DNS).
 
 ### Create a GitLab Runner
-1. Create a GitLab CI project runner (Settings > CI/CD Settings > Runners > New project runner), with the options "Can run untagged jobs" and "Lock to current projects" enabled.
-  While "Lock to current projects" isn't strictly necessary, it is highly recommended unless you are absolutely sure that other projects using the runner won't interfere with the kubernetes cluster associated with this runner.
-  **Save the runner's authentication token.**
+1. Create a namespace on the kubernetes cluster for GitLab to use on its CI jobs: `kubectl create namespace gitlab-ci`.
 
-2. Create a namespace on the kubernetes cluster for GitLab to use on its CI jobs: `kubectl create namespace gitlab-ci`.
+2. Create a GitLab CI project runner.
+    1. Create a new runner in GitLab (Settings > CI/CD Settings > Runners > New project runner), with the options "Can run untagged jobs" and "Lock to current projects" enabled.
+    
+    While "Lock to current projects" isn't strictly necessary, it is highly recommended unless you are absolutely sure that other projects using the runner won't interfere with the kubernetes cluster associated with this runner.
+    
+    **Save the runner's authentication token.**
 
-3. Save runner authentication token in kubernetes. 
-    1. Create a file named `runner-token.yml` with the following contents (replacing `<YOUR TOKEN HERE>` with the runner authentication token from the previous step):
+
+    1. Create a file named `runner-token.yml` with the following contents (we will later replace `<YOUR TOKEN HERE>` with the runner authentication token from ):
     ```yaml
     apiVersion: v1
     kind: Secret
