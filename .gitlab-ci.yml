@@ -1,5 +1,17 @@
+build-backend-container-image:
+  image:
+    # kanino -> a tool for building container images inside kubernetes without docker
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/backend"
+      --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/backend:rev-${CI_COMMIT_SHORT_SHA}"
+
 build-chaincode-container-image:
   image:
+    # kanino -> a tool for building container images inside kubernetes without docker
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   script:
@@ -8,9 +20,10 @@ build-chaincode-container-image:
       --dockerfile "${CI_PROJECT_DIR}/chaincode/Dockerfile"
       --destination "${CI_REGISTRY_IMAGE}/chaincode:rev-${CI_COMMIT_SHORT_SHA}"
 
+
 deploy-chaincode:
   image:
-    name: alpine:latest
+    name: alpine:latest # alpine linux -> lightweight and efficient
   needs:
     - build-chaincode-container-image
     - setup-hlf
@@ -33,12 +46,12 @@ deploy-chaincode:
 
       # TODO: streamline with tool
       NAMESPACE=hlf
-      CHAINCODE_NAME="chaincode"
-      CHAINCODE_LABEL="chaincode"
+      CHAINCODE_NAME="bibliochainchaincode"
+      CHAINCODE_LABEL="bibliochainchaincode"
       CHANNEL_NAME=chan
 
     # fetch secrets from k8s
-    - | 
+    - |
       kubectl hlf inspect --namespace "$NAMESPACE" --output org1.yaml -o Org1MSP -o OrdererMSP
       kubectl hlf ca enroll --namespace "$NAMESPACE" --name=org1-ca --user=admin --secret=adminpw --mspid Org1MSP \
         --ca-name ca  --output peer-org1.yaml
@@ -46,7 +59,7 @@ deploy-chaincode:
 
     # compute next chaincode seqnum
     - |
-      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer=org1-peer0 --channel="$CHANNEL_NAME" --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
+      kubectl hlf chaincode getlatest --config=org1.yaml --user=admin --peer="org1-peer0.${NAMESPACE}" --channel="$CHANNEL_NAME" --msp-id=Org1MSP --name="$CHAINCODE_NAME" --property sequence --out seq.txt || echo 0 > seq.txt
       SEQUENCE="$(cat seq.txt)"
       SEQUENCE=$(( SEQUENCE + 1 ))
       rm seq.txt
@@ -104,18 +117,6 @@ deploy-chaincode:
         --version "$VERSION" --sequence "$SEQUENCE" --name=$CHAINCODE_NAME \
         --policy="OR('Org1MSP.member')" --channel="$CHANNEL_NAME"
 
-build-rest-api-container-image:
-  image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [""]
-  script:
-    - /kaniko/executor
-      --context "${CI_PROJECT_DIR}/rest-api"
-      --dockerfile "${CI_PROJECT_DIR}/rest-api/Dockerfile"
-      --destination "${CI_REGISTRY_IMAGE}/rest-api:rev-${CI_COMMIT_SHORT_SHA}"
-      --ignore-path=/product_uuid
-    # --ignore-path=/product_uuid is a fix for multi-stage builds (see https://github.com/GoogleContainerTools/kaniko/issues/2164#issuecomment-1450264605)
-
 build-frontend-container-image:
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
@@ -133,8 +134,8 @@ deploy-app:
     name: alpine:latest
   needs:
     - setup-hlf
+    - build-backend-container-image
     - deploy-chaincode
-    - build-rest-api-container-image
     - build-frontend-container-image
   script:
     # TODO: build special purpose container with tools pre-installed
@@ -144,32 +145,36 @@ deploy-app:
     - |
       export NAMESPACE=hlf
       export APP_NAME=app
-      export REST_API_HOST=rest-api.localho.st
+      export BACKEND_HOST=backend.localho.st
       export FRONTEND_HOST=app.localho.st
-      export REST_API_IMAGE="${CI_REGISTRY_IMAGE}/rest-api:rev-${CI_COMMIT_SHORT_SHA}"
+      export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/backend:rev-${CI_COMMIT_SHORT_SHA}"
       export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/frontend:rev-${CI_COMMIT_SHORT_SHA}"
       export ORG=org1
       export PEER=peer0
       export USER=admin
       export CHANNEL_NAME=chan
-      export CHAINCODE_NAME="chain"
+      export CHAINCODE_NAME=bibliochainchaincode
       export MSP_ID=Org1MSP
+      export IS_DEV=true
 
     # deploy
     - envsubst < .app-k8s.yml | kubectl apply --namespace "$NAMESPACE" -f -
 
     # wait for new API rollout
-    - kubectl rollout status deployment/app-rest-api -n "$NAMESPACE" --timeout=90s
+    - kubectl rollout status deployment/app-backend -n "$NAMESPACE" --timeout=90s
 
     # wait for new frontend rollout
     - kubectl rollout status deployment/app-frontend -n "$NAMESPACE" --timeout=30s
 
-setup-hlf:
+setup-hlf: #setups hyperledger fabric (hlf)
   image:
     name: alpine:latest
   script:
     # TODO: build special purpose container with tools pre-installed
     - |
+      # kubectl is a commandline for kubernetes that allows to run commands against containers
+      # envsubst replaces env variables
+      # krew is a kubectl plugin manager
       apk add kubectl git curl envsubst
       (
         set -x; cd "$(mktemp -d)" &&
@@ -182,7 +187,7 @@ setup-hlf:
       )
       export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 
-      kubectl krew install hlf
+      kubectl krew install hlf # hyperledger plugin used to manage hyperledger resources in kubernetes
 
     # TODO: declarative (and non-hardcoded) topology config tool
     - |
@@ -196,7 +201,7 @@ setup-hlf:
       CA_IMAGE=hyperledger/fabric-ca
       CA_VERSION=1.5.13
 
-      # bail if everything is set up already
+      # HLF SETUP - bail if everything is set up already
       if kubectl get --namespace "$NAMESPACE" fabricoperatorapis.hlf.kungfusoftware.es operator-api 2>/dev/null; then
         # Already setup, just wait for the last critical steps to finish
         kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricmainchannels.hlf.kungfusoftware.es "$CHANNEL_NAME"
@@ -204,7 +209,7 @@ setup-hlf:
         exit 0
       fi
 
-    # ensure no half-baked installations are present
+    # Cleanup old fabric installations
     - |
       kubectl delete fabricoperatorapis.hlf.kungfusoftware.es --namespace $NAMESPACE --all
       kubectl delete fabricorderernodes.hlf.kungfusoftware.es --namespace $NAMESPACE --all
@@ -234,12 +239,12 @@ setup-hlf:
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabriccas.hlf.kungfusoftware.es --all
       kubectl wait --namespace "$NAMESPACE" --for=condition=Ready --timeout=180s pods --all
-      
-    # register peer user in org1 (same for both for simplicity)
+
+    # register peer user in org1 (same for both for simplicity) - same ca?
     - |
       kubectl hlf ca register --namespace "$NAMESPACE" --name=org1-ca --user=peer --secret=peerpw --type=peer \
         --enroll-id enroll --enroll-secret=enrollpw --mspid Org1MSP
-      
+
     # create org1 peers
     - |
       for i in 0 1; do
@@ -275,7 +280,7 @@ setup-hlf:
       
       kubectl wait --namespace "$NAMESPACE" --timeout=180s --for=condition=Running fabricorderernodes.hlf.kungfusoftware.es --all
       kubectl wait --namespace "$NAMESPACE" --for=condition=Ready --timeout=180s pods --all
-      
+
     # create orderer msp id in its own CA
     - |
       kubectl hlf ca register --name=ord-ca --user=admin --secret=adminpw --namespace "$NAMESPACE" \
@@ -286,7 +291,7 @@ setup-hlf:
       kubectl hlf ca enroll --name=ord-ca --namespace "$NAMESPACE" \
         --user=admin --secret=adminpw --mspid OrdererMSP \
         --ca-name ca  --output orderermspsign.yaml
-      
+
     # create org1 msp orderer id
     - |
       kubectl hlf ca register --name=org1-ca --user=admin --secret=adminpw --namespace "$NAMESPACE" \
